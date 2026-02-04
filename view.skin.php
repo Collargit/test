@@ -40,6 +40,25 @@ $list_item = $view;
 // [추가] 현재 보고 있는 글이 공지사항인지 확인 (배지용)
 $notice_array = explode(',', trim($board['bo_notice']));
 $list_item['is_notice'] = in_array($list_item['wr_id'], $notice_array);
+
+// 비밀글 처리
+$is_secret = (isset($list_item['wr_option']) && strpos($list_item['wr_option'], 'secret') !== false);
+$is_protected = (!empty($list_item['wr_protect']));
+
+// 관리자 전용 비밀글 - 관리자가 아니면 접근 불가
+if($is_secret && !$is_admin) {
+    alert('관리자 전용 비밀글입니다.', G5_BBS_URL.'/board.php?bo_table='.$bo_table);
+    exit;
+}
+
+// 비밀번호 보호 게시글 - 세션 체크
+$protect_verified = false;
+if($is_protected && !$is_admin) {
+    $session_key = 'protect_verified_'.$bo_table.'_'.$list_item['wr_id'];
+    if(isset($_SESSION[$session_key]) && $_SESSION[$session_key] === true) {
+        $protect_verified = true;
+    }
+}
 ?>
 
 <style>
@@ -79,19 +98,48 @@ $list_item['is_notice'] = in_array($list_item['wr_id'], $notice_array);
 <input type="text" id="wr_content" value="" style="position:absolute; top:-9999px; left:-9999px; width:0; height:0; border:0; padding:0; margin:0; opacity:0;">
 
 <div id="load_log_board" style="padding-top:20px;">
-    
+
     <?php if ($board['bo_content_head']) { ?>
         <div id="bo_content_head" style="margin-bottom:20px; padding:0; overflow:visible; max-width:700px; margin:0 auto 20px auto;">
             <?php echo $board['bo_content_head']; ?>
         </div>
     <?php } ?>
 
+    <?php if($is_protected && !$is_admin && !$protect_verified) { ?>
+    <!-- 비밀번호 보호 게시글 - 비밀번호 입력 폼 -->
+    <div class="log-modal-content" style="margin: 0 auto; position: relative; display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
+        <div class="protect-password-form" id="view_protect_form">
+            <div style="padding:50px 30px; text-align:center;">
+                <div style="font-size:60px; margin-bottom:20px;">🔒</div>
+                <h3 style="margin:0 0 15px 0; font-size:18px; color:#333;">비밀번호로 보호된 게시글</h3>
+                <p style="margin:0 0 25px 0; font-size:14px; color:#888;">이 게시글을 열람하려면 비밀번호를 입력하세요.</p>
+                <form method="post" action="<?php echo $board_skin_url; ?>/verify_protect.php" style="display:inline-block;">
+                    <input type="hidden" name="bo_table" value="<?php echo $bo_table; ?>">
+                    <input type="hidden" name="wr_id" value="<?php echo $list_item['wr_id']; ?>">
+                    <input type="hidden" name="redirect" value="<?php echo G5_BBS_URL.'/board.php?bo_table='.$bo_table.'&wr_id='.$list_item['wr_id']; ?>">
+                    <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap;">
+                        <input type="password" name="password" class="frm_input" placeholder="비밀번호 입력" style="width:220px; padding:12px 18px; text-align:center; font-size:15px;" required>
+                        <button type="submit" class="ui-btn point" style="padding:0 30px; border-radius:25px; font-weight:bold; font-size:14px;">확인</button>
+                    </div>
+                    <?php if(isset($_GET['error']) && $_GET['error'] == 'password') { ?>
+                    <p style="margin:20px 0 0 0; font-size:13px; color:#d3393d;">비밀번호가 일치하지 않습니다.</p>
+                    <?php } ?>
+                </form>
+                <div style="margin-top:25px;">
+                    <a href="<?php echo G5_BBS_URL.'/board.php?bo_table='.$bo_table; ?>" style="font-size:13px; color:#888; text-decoration:none;">← 목록으로 돌아가기</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php } else { ?>
+    <!-- 일반 게시글 또는 비밀번호 확인 완료 -->
     <div class="log-modal-content" style="margin: 0 auto; position: relative; display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.1);">
         <div style="padding:0;">
             <?php include($board_skin_path.'/list.log.skin.php'); ?>
         </div>
         <div style="height:20px;"></div>
     </div>
+    <?php } ?>
 </div>
 
 <div id="img-lightbox">

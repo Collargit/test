@@ -79,9 +79,35 @@ if(!$is_error) {
 			</div>
 		</div>
 
-        <div class="comments" style="margin-top:15px;"> 
+        <div class="comments" style="margin-top:15px;">
             <textarea name="wr_content" id="wr_content" class="frm_input" style="width:100%; height:80px;" placeholder="코멘트 / 설명 (선택사항)"><?php echo $write['wr_content'] ?></textarea>
-		</div>	
+		</div>
+
+        <!-- 비밀글 옵션 -->
+        <div class="secret-options" style="margin-top:15px; padding:15px; background:#f9f9f9; border-radius:10px;">
+            <div style="font-size:12px; color:#666; margin-bottom:10px; font-weight:bold;">🔒 게시글 공개 설정</div>
+
+            <?php if($is_admin) { ?>
+            <!-- 관리자 전용 비밀글 (관리자만 표시) -->
+            <div style="margin-bottom:10px;">
+                <label style="display:flex; align-items:center; cursor:pointer; font-size:13px; color:#555;">
+                    <input type="checkbox" name="set_secret" value="secret" <?php echo (isset($write['wr_option']) && strpos($write['wr_option'], 'secret') !== false) ? 'checked' : ''; ?> style="margin-right:8px; width:16px; height:16px;">
+                    <span>🔐 관리자 전용 비밀글</span>
+                    <span style="font-size:11px; color:#999; margin-left:8px;">(관리자만 볼 수 있음)</span>
+                </label>
+            </div>
+            <?php } ?>
+
+            <!-- 비밀번호 보호 게시글 (모든 사용자) -->
+            <div style="display:flex; align-items:center; flex-wrap:wrap; gap:10px;">
+                <label style="display:flex; align-items:center; cursor:pointer; font-size:13px; color:#555;">
+                    <input type="checkbox" id="use_protect" name="use_protect" value="1" <?php echo (!empty($write['wr_protect'])) ? 'checked' : ''; ?> onchange="toggleProtectPassword(this);" style="margin-right:8px; width:16px; height:16px;">
+                    <span>🔑 비밀번호 보호</span>
+                </label>
+                <input type="password" name="wr_protect" id="wr_protect_input" value="<?php echo isset($write['wr_protect']) ? htmlspecialchars($write['wr_protect']) : ''; ?>" placeholder="열람 비밀번호 입력" class="frm_input" style="width:150px; padding:8px 12px; font-size:12px; <?php echo empty($write['wr_protect']) ? 'display:none;' : ''; ?>">
+                <span style="font-size:11px; color:#999;">(비밀번호 입력 시에만 열람 가능)</span>
+            </div>
+        </div>	
 	
         <div class="txt-center" style="margin-top:20px; display:flex; justify-content:center; gap:5px;">
             <button type="button" onclick="openTextDeco();" class="ui-btn" style="padding:0 15px; border-radius:20px; background:#fff; border:1px solid #ddd; color:#555;">텍꾸</button>
@@ -98,12 +124,24 @@ if(!$is_error) {
 <textarea id="wr_content_bridge" style="display:none;"></textarea>
 
 <script>
-	function fn_log_type(type) { 
+	function fn_log_type(type) {
 		$('#add_UPLOAD').hide();
 		$('#add_URL').hide();
 		$('#add_TEXT').hide();
 		$('#add_'+type).show();
 	}
+
+    // 비밀번호 보호 체크박스 토글
+    function toggleProtectPassword(checkbox) {
+        var pwInput = document.getElementById('wr_protect_input');
+        if(checkbox.checked) {
+            pwInput.style.display = 'inline-block';
+            pwInput.focus();
+        } else {
+            pwInput.style.display = 'none';
+            pwInput.value = '';
+        }
+    }
     function fwrite_submit(f) {
         document.getElementById("btn_submit").disabled = "disabled";
         return true;

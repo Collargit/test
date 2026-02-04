@@ -114,6 +114,15 @@ if(file_exists($emoticon_setting_file)) {
 for ($i=0; $i<count($list); $i++) {
         $list_item = $list[$i];
         $wr_id = $list_item['wr_id'];
+
+        // 비밀글 처리
+        $is_secret = (isset($list_item['wr_option']) && strpos($list_item['wr_option'], 'secret') !== false);
+        $is_protected = (!empty($list_item['wr_protect']));
+
+        // 관리자 전용 비밀글은 관리자가 아니면 건너뛰기
+        if($is_secret && !$is_admin) {
+            continue;
+        }
        
         // [변수 초기화]
         $col_span = 4; 
@@ -189,14 +198,22 @@ for ($i=0; $i<count($list); $i++) {
             }
         }
     ?>
-        <div class="gallery-item item-box tile-span-<?php echo $col_span; ?>">
-            <a href="javascript:void(0);" onclick="openLogModal('<?php echo $wr_id ?>');" class="item-link" title="<?php echo get_text($list_item['wr_subject']); ?>">
+        <div class="gallery-item item-box tile-span-<?php echo $col_span; ?>" data-protected="<?php echo $is_protected ? '1' : '0'; ?>" data-secret="<?php echo $is_secret ? '1' : '0'; ?>">
+            <a href="javascript:void(0);" onclick="openLogModal('<?php echo $wr_id ?>', <?php echo $is_protected ? 'true' : 'false'; ?>);" class="item-link" title="<?php echo get_text($list_item['wr_subject']); ?>">
                 
                 <div class="thumb-container">
                     <?php echo $thumb_content; ?>
                     
                     <?php if($list_item['ca_name']) { ?>
                         <span class="cate-badge"><?php echo $list_item['ca_name'] ?></span>
+                    <?php } ?>
+
+                    <?php if($is_secret && $is_admin) { ?>
+                        <span class="secret-badge admin-only" title="관리자 전용 비밀글">🔐</span>
+                    <?php } ?>
+
+                    <?php if($is_protected) { ?>
+                        <span class="secret-badge protected" title="비밀번호 보호 게시글">🔑</span>
                     <?php } ?>
                     
                     <div class="item-overlay">
@@ -209,8 +226,26 @@ for ($i=0; $i<count($list); $i++) {
             </a>
         </div>
 
-        <div id="modal_log_<?php echo $wr_id ?>" class="log-modal-overlay" onclick="closeLogModal(event, '<?php echo $wr_id ?>');">
+        <div id="modal_log_<?php echo $wr_id ?>" class="log-modal-overlay" onclick="closeLogModal(event, '<?php echo $wr_id ?>');" data-protected="<?php echo $is_protected ? '1' : '0'; ?>">
             <div class="log-modal-content">
+                <?php if($is_protected && !$is_admin) { ?>
+                <!-- 비밀번호 보호 게시글 - 비밀번호 입력 폼 -->
+                <div class="protect-password-form" id="protect_form_<?php echo $wr_id ?>">
+                    <div style="padding:40px 30px; text-align:center;">
+                        <div style="font-size:50px; margin-bottom:15px;">🔒</div>
+                        <h3 style="margin:0 0 10px 0; font-size:16px; color:#333;">비밀번호로 보호된 게시글</h3>
+                        <p style="margin:0 0 20px 0; font-size:13px; color:#888;">이 게시글을 열람하려면 비밀번호를 입력하세요.</p>
+                        <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap;">
+                            <input type="password" id="protect_pw_<?php echo $wr_id ?>" class="frm_input" placeholder="비밀번호 입력" style="width:200px; padding:10px 15px; text-align:center; font-size:14px;" onkeypress="if(event.keyCode==13) checkProtectPassword('<?php echo $wr_id ?>');">
+                            <button type="button" onclick="checkProtectPassword('<?php echo $wr_id ?>');" class="ui-btn point" style="padding:0 25px; border-radius:20px; font-weight:bold;">확인</button>
+                        </div>
+                        <p id="protect_error_<?php echo $wr_id ?>" style="margin:15px 0 0 0; font-size:12px; color:#d3393d; display:none;">비밀번호가 일치하지 않습니다.</p>
+                    </div>
+                </div>
+                <!-- 실제 내용 (초기에는 숨김) -->
+                <div class="protected-content" id="content_<?php echo $wr_id ?>" style="display:none;">
+                <?php } ?>
+
                 <div style="padding:0;">
                     <?php include($board_skin_path.'/list.log.skin.php'); ?>
                     
@@ -234,6 +269,10 @@ for ($i=0; $i<count($list); $i++) {
                         <button type="button" class="btn-cmt-toggle" onclick="toggleCommentForm('<?php echo $wr_id ?>')" style="display:none;">댓글 쓰기</button>
                     </div>
                 </div>
+
+                <?php if($is_protected && !$is_admin) { ?>
+                </div><!-- .protected-content 닫기 -->
+                <?php } ?>
             </div>
         </div>
     <?php } ?>
@@ -519,35 +558,119 @@ function updateCloseBtnPosition() {
     }
 }
 
-function openLogModal(wr_id) {
+// 비밀번호가 확인된 게시글 ID 저장
+var unlockedPosts = {};
+
+function openLogModal(wr_id, isProtected) {
     var modal = document.getElementById('modal_log_' + wr_id);
     var content = modal ? modal.querySelector('.log-modal-content') : null;
-    
+
     if(modal && content) {
         // 애니메이션 클래스 초기화 및 부여
         modal.classList.remove('close-anim');
         content.classList.remove('close-anim');
         modal.classList.add('open-anim');
         content.classList.add('open-anim');
-        
-        modal.style.display = 'block';
-        document.body.style.overflow = 'hidden'; 
 
-        // 스와이퍼 로드 로직 (기존 유지)
-        if (!swipers[wr_id]) {
-            var swiperContainer = modal.querySelector('.mySwiper');
-            if(swiperContainer) {
-                swipers[wr_id] = new Swiper(swiperContainer, {
-                    slidesPerView: 1, spaceBetween: 30, loop: false, autoHeight: true,
-                    navigation: { nextEl: swiperContainer.querySelector('.swiper-button-next'), prevEl: swiperContainer.querySelector('.swiper-button-prev') },
-                    pagination: { el: swiperContainer.querySelector('.swiper-pagination'), clickable: true },
-                    observer: true, observeParents: true,
-                });
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+
+        // 비밀번호 보호 게시글 처리
+        var protectForm = document.getElementById('protect_form_' + wr_id);
+        var protectedContent = document.getElementById('content_' + wr_id);
+
+        if(isProtected && protectForm && protectedContent) {
+            // 이미 비밀번호가 확인된 경우
+            if(unlockedPosts[wr_id]) {
+                protectForm.style.display = 'none';
+                protectedContent.style.display = 'block';
+                initSwiper(modal, wr_id);
+            } else {
+                // 비밀번호 입력 폼 표시
+                protectForm.style.display = 'block';
+                protectedContent.style.display = 'none';
+                // 입력 필드에 포커스
+                setTimeout(function() {
+                    var pwInput = document.getElementById('protect_pw_' + wr_id);
+                    if(pwInput) pwInput.focus();
+                }, 300);
             }
         } else {
-            swipers[wr_id].update();
+            // 보호되지 않은 게시글
+            initSwiper(modal, wr_id);
         }
     }
+}
+
+// 스와이퍼 초기화 함수 분리
+function initSwiper(modal, wr_id) {
+    if (!swipers[wr_id]) {
+        var swiperContainer = modal.querySelector('.mySwiper');
+        if(swiperContainer) {
+            swipers[wr_id] = new Swiper(swiperContainer, {
+                slidesPerView: 1, spaceBetween: 30, loop: false, autoHeight: true,
+                navigation: { nextEl: swiperContainer.querySelector('.swiper-button-next'), prevEl: swiperContainer.querySelector('.swiper-button-prev') },
+                pagination: { el: swiperContainer.querySelector('.swiper-pagination'), clickable: true },
+                observer: true, observeParents: true,
+            });
+        }
+    } else {
+        swipers[wr_id].update();
+    }
+}
+
+// 비밀번호 확인 함수
+function checkProtectPassword(wr_id) {
+    var pwInput = document.getElementById('protect_pw_' + wr_id);
+    var errorMsg = document.getElementById('protect_error_' + wr_id);
+    var protectForm = document.getElementById('protect_form_' + wr_id);
+    var protectedContent = document.getElementById('content_' + wr_id);
+
+    if(!pwInput || !pwInput.value) {
+        if(errorMsg) {
+            errorMsg.textContent = '비밀번호를 입력하세요.';
+            errorMsg.style.display = 'block';
+        }
+        return;
+    }
+
+    // AJAX로 비밀번호 확인
+    $.ajax({
+        url: '<?php echo $board_skin_url; ?>/check_protect.php',
+        type: 'POST',
+        data: {
+            bo_table: '<?php echo $bo_table; ?>',
+            wr_id: wr_id,
+            password: pwInput.value
+        },
+        dataType: 'json',
+        success: function(response) {
+            if(response.success) {
+                // 비밀번호 일치 - 내용 표시
+                unlockedPosts[wr_id] = true;
+                protectForm.style.display = 'none';
+                protectedContent.style.display = 'block';
+
+                // 스와이퍼 초기화
+                var modal = document.getElementById('modal_log_' + wr_id);
+                initSwiper(modal, wr_id);
+            } else {
+                // 비밀번호 불일치
+                if(errorMsg) {
+                    errorMsg.textContent = response.message || '비밀번호가 일치하지 않습니다.';
+                    errorMsg.style.display = 'block';
+                }
+                pwInput.value = '';
+                pwInput.focus();
+            }
+        },
+        error: function() {
+            if(errorMsg) {
+                errorMsg.textContent = '서버 오류가 발생했습니다. 다시 시도해주세요.';
+                errorMsg.style.display = 'block';
+            }
+        }
+    });
 }
 
 function closeLogModal(e, wr_id) {

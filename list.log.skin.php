@@ -8,6 +8,14 @@ if (($member['mb_id'] && ($member['mb_id'] == $list_item['mb_id'])) || $is_admin
 	$delete_href ='./delete.php?bo_table='.$bo_table.'&amp;wr_id='.$list_item['wr_id'].'&amp;token='.$token.'&amp;page='.$page.urldecode($qstr);
 }
 
+// 비밀글 상태 확인 (list.skin.php에서 설정되지 않은 경우를 위해)
+if(!isset($is_secret)) {
+    $is_secret = (isset($list_item['wr_option']) && strpos($list_item['wr_option'], 'secret') !== false);
+}
+if(!isset($is_protected)) {
+    $is_protected = (!empty($list_item['wr_protect']));
+}
+
 // [수정] 실제 유효한(삭제되지 않은) 댓글 수 직접 카운트
 $sql_cnt = " select count(*) as cnt from {$write_table} where wr_parent = '{$list_item['wr_id']}' and wr_is_comment = 1 and wr_content not like '%삭제%' ";
 $row_cnt = sql_fetch($sql_cnt);
@@ -53,6 +61,12 @@ while ($row_img = sql_fetch_array($result_cmt_img)) {
                     <span style="font-size:15px; display:block;">
                         <?php if($list_item['is_notice']) { ?>
                             <span class="notice-badge">NOTICE</span>
+                        <?php } ?>
+                        <?php if($is_secret && $is_admin) { ?>
+                            <span class="secret-title-badge admin-only" title="관리자 전용 비밀글">🔐</span>
+                        <?php } ?>
+                        <?php if($is_protected) { ?>
+                            <span class="secret-title-badge protected" title="비밀번호 보호">🔑</span>
                         <?php } ?>
                         <?=$list_item['wr_subject']?>
                     </span>
