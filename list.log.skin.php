@@ -1,6 +1,52 @@
 <?php
 if (!defined("_GNUBOARD_")) exit;
 
+// 비밀글/보호글 권한 체크
+$is_secret = (strpos($list_item['wr_option'], 'secret') !== false);
+$is_protected = (!empty($list_item['wr_password']));
+$is_owner = ($member['mb_id'] && $member['mb_id'] == $list_item['mb_id']);
+$can_view = ($is_admin || $is_owner);
+$has_password_session = get_session('ss_secret_'.$bo_table.'_'.$list_item['wr_id']);
+$can_view_protected = ($can_view || $has_password_session);
+
+// 비밀글인데 권한이 없는 경우
+if($is_secret && !$can_view) {
+?>
+<div class="item" id="log_<?=$list_item['wr_id']?>">
+    <div class="item-inner">
+        <div class="secret-content-box">
+            <span class="secret-icon">🔒</span>
+            <p class="secret-message">비밀글 입니다.</p>
+            <p class="secret-desc">관리자 또는 작성자만 열람할 수 있습니다.</p>
+        </div>
+    </div>
+</div>
+<?php
+    return;
+}
+
+// 보호글인데 권한이 없는 경우 - 비밀번호 입력 폼 표시
+if($is_protected && !$can_view_protected) {
+?>
+<div class="item" id="log_<?=$list_item['wr_id']?>">
+    <div class="item-inner">
+        <div class="protected-content-box">
+            <span class="protected-icon">🔐</span>
+            <p class="protected-message">보호글 입니다.</p>
+            <form name="fpassword_<?=$list_item['wr_id']?>" action="<?=G5_BBS_URL?>/password_check.php" method="post" onsubmit="return check_password_form(this);">
+                <input type="hidden" name="bo_table" value="<?=$bo_table?>">
+                <input type="hidden" name="wr_id" value="<?=$list_item['wr_id']?>">
+                <input type="hidden" name="redirect" value="<?=G5_BBS_URL?>/board.php?bo_table=<?=$bo_table?>">
+                <input type="password" name="wr_password" class="protected-password-input" placeholder="비밀번호를 입력하세요" required>
+                <button type="submit" class="protected-submit-btn">확인</button>
+            </form>
+        </div>
+    </div>
+</div>
+<?php
+    return;
+}
+
 $update_href = $delete_href = '';
 if (($member['mb_id'] && ($member['mb_id'] == $list_item['mb_id'])) || $is_admin) {
 	$update_href = './write.php?w=u&amp;bo_table='.$bo_table.'&amp;wr_id='.$list_item['wr_id'].'&amp;page='.$page.$qstr;
