@@ -172,14 +172,30 @@ for ($i=0; $i<count($list); $i++) {
         $img_file = ""; 
         
 
+        // 비밀글/보호글 체크
+        $is_secret = (strpos($list_item['wr_option'], 'secret') !== false);
+        $is_protected = (!empty($list_item['wr_password']));
+        $is_owner = ($member['mb_id'] && $member['mb_id'] == $list_item['mb_id']);
+        $can_view = ($is_admin || $is_owner);
+
         $thumb_content = "";
-        if($thumb['src']) {
+
+        // 비밀글인데 열람 권한이 없는 경우
+        if($is_secret && !$can_view) {
+            $thumb_content = '<div class="secret-thumb-box"><span class="secret-icon">🔒</span><span class="secret-text">비밀글 입니다.</span></div>';
+        }
+        // 보호글인데 열람 권한이 없는 경우
+        elseif($is_protected && !$can_view) {
+            $thumb_content = '<div class="protected-thumb-box"><span class="protected-icon">🔐</span><span class="protected-text">보호글 입니다.</span></div>';
+        }
+        // 정상적으로 볼 수 있는 경우
+        elseif($thumb['src']) {
             $thumb_content = '<img src="'.$thumb['src'].'" alt="img">';
         } elseif ($list_item['wr_type'] == 'URL' && $list_item['wr_url']) {
             $thumb_content = '<img src="'.$list_item['wr_url'].'" alt="img">';
-           } else {
+        } else {
             $txt_source = $list_item['wr_text'] ? $list_item['wr_text'] : $list_item['wr_content'];
-            $txt_html = conv_content($txt_source, 1); 
+            $txt_html = conv_content($txt_source, 1);
             if (function_exists('emote_ev')) $txt_html = emote_ev($txt_html);
             if (function_exists('markup_text')) $txt_html = markup_text($txt_html);
             if(trim($txt_html)) {
