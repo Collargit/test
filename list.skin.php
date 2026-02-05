@@ -169,28 +169,19 @@ for ($i=0; $i<count($list); $i++) {
              $thumb['src'] = G5_URL.'/data/file/'.$bo_table.'/'.$files[0]['file'];
         }
 
-        $img_file = ""; 
-        
+        $img_file = "";
 
-        // 비밀글/보호글 체크
+
+        // 비밀글 체크
         $is_secret = (strpos($list_item['wr_option'], 'secret') !== false);
-        $is_protected = (!empty($list_item['wr_password']));
         $is_owner = ($member['mb_id'] && $member['mb_id'] == $list_item['mb_id']);
         $can_view = ($is_admin || $is_owner);
-
-        // 보호글 비밀번호 입력 세션 체크 (비밀번호 입력 시 열람 가능)
-        $has_password_session = get_session('ss_secret_'.$bo_table.'_'.$wr_id);
-        $can_view_protected = ($can_view || $has_password_session);
 
         $thumb_content = "";
 
         // 비밀글인데 열람 권한이 없는 경우 (관리자/작성자만 가능)
         if($is_secret && !$can_view) {
             $thumb_content = '<div class="secret-thumb-box"><span class="secret-icon">🔒</span><span class="secret-text">비밀글 입니다.</span></div>';
-        }
-        // 보호글인데 열람 권한이 없는 경우 (비밀번호 입력 시 열람 가능)
-        elseif($is_protected && !$can_view_protected) {
-            $thumb_content = '<div class="protected-thumb-box"><span class="protected-icon">🔐</span><span class="protected-text">보호글 입니다.</span></div>';
         }
         // 정상적으로 볼 수 있는 경우
         elseif($thumb['src']) {

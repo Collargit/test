@@ -86,51 +86,20 @@
     text-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
-/* 보호글 썸네일 스타일 */
-.protected-thumb-box {
-    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    display: flex; flex-direction: column; justify-content: center; align-items: center;
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: #fff; z-index: 2;
-}
-.protected-thumb-box .protected-icon {
-    font-size: 32px; margin-bottom: 10px; opacity: 0.9;
-}
-.protected-thumb-box .protected-text {
-    font-size: 13px; font-weight: bold; letter-spacing: 1px;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-/* 모달 내 비밀글/보호글 내용 박스 스타일 */
-.secret-content-box, .protected-content-box {
+/* 모달 내 비밀글 내용 박스 스타일 */
+.secret-content-box {
     display: flex; flex-direction: column; justify-content: center; align-items: center;
     padding: 60px 30px; text-align: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
-.secret-content-box { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.protected-content-box { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.secret-content-box .secret-icon, .protected-content-box .protected-icon {
+.secret-content-box .secret-icon {
     font-size: 48px; margin-bottom: 15px;
 }
-.secret-content-box .secret-message, .protected-content-box .protected-message {
+.secret-content-box .secret-message {
     color: #fff; font-size: 18px; font-weight: bold; margin: 0 0 10px 0;
 }
 .secret-content-box .secret-desc {
     color: rgba(255,255,255,0.8); font-size: 13px; margin: 0;
-}
-.protected-content-box form {
-    margin-top: 15px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-}
-.protected-password-input {
-    padding: 10px 15px; border: none; border-radius: 25px; font-size: 14px;
-    width: 200px; text-align: center; outline: none;
-}
-.protected-submit-btn {
-    padding: 10px 25px; border: none; border-radius: 25px; font-size: 14px;
-    background: #fff; color: #f5576c; font-weight: bold; cursor: pointer;
-    transition: all 0.2s ease;
-}
-.protected-submit-btn:hover {
-    background: #333; color: #fff;
 }
 
 .cate-badge {
